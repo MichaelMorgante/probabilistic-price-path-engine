@@ -1,0 +1,9 @@
+numpy
+pandas
+matplotlib
+plotly
+streamlit
+scipy
+MetaTrader5
+jupyter
+ipykernel
