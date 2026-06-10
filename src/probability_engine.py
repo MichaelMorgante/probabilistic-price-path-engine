@@ -4,6 +4,81 @@ from typing import Dict, Optional
 import numpy as np
 from scipy.stats import norm
 
+def pathwise_tp_sl_metrics(
+    paths: np.ndarray,
+    entry_price: float,
+    direction: str = "long",
+    tp_points: float = 45.0,
+    sl_points: float = 25.0,
+) -> Dict[str, float]:
+    direction = direction.lower()
+    if direction not in {"long", "short"}:
+        raise ValueError("direction must be 'long' or 'short'.")
+
+    future = paths[:, 1:]
+
+    if direction == "long":
+        tp_level = entry_price + tp_points
+        sl_level = entry_price - sl_points
+        tp_hits = future >= tp_level
+        sl_hits = future <= sl_level
+    else:
+        tp_level = entry_price - tp_points
+        sl_level = entry_price + sl_points
+        tp_hits = future <= tp_level
+        sl_hits = future >= sl_level
+
+    n_paths = future.shape[0]
+    tp_first = 0
+    sl_first = 0
+    neither = 0
+    tp_times = []
+    sl_times = []
+
+    for i in range(n_paths):
+        tp_idx = np.where(tp_hits[i])[0]
+        sl_idx = np.where(sl_hits[i])[0]
+
+        first_tp = int(tp_idx[0]) if len(tp_idx) > 0 else None
+        first_sl = int(sl_idx[0]) if len(sl_idx) > 0 else None
+
+        if first_tp is None and first_sl is None:
+            neither += 1
+        elif first_sl is None or (first_tp is not None and first_tp < first_sl):
+            tp_first += 1
+            tp_times.append(first_tp + 1)
+        elif first_tp is None or (first_sl is not None and first_sl < first_tp):
+            sl_first += 1
+            sl_times.append(first_sl + 1)
+        else:
+            # Conservative treatment for same-candle touch.
+            sl_first += 1
+            sl_times.append(first_sl + 1)
+
+    terminal = paths[:, -1]
+    pct = np.percentile(terminal, [5, 20, 50, 80, 95])
+
+    return {
+        "entry_price": float(entry_price),
+        "direction": direction,
+        "tp_level": float(tp_level),
+        "sl_level": float(sl_level),
+        "p_tp_first": float(tp_first / n_paths),
+        "p_sl_first": float(sl_first / n_paths),
+        "p_neither": float(neither / n_paths),
+        "avg_time_to_tp": float(np.mean(tp_times)) if tp_times else float("nan"),
+        "avg_time_to_sl": float(np.mean(sl_times)) if sl_times else float("nan"),
+        "p_terminal_up": float(np.mean(terminal > entry_price)),
+        "expected_price": float(np.mean(terminal)),
+        "expected_move": float(np.mean(terminal - entry_price)),
+        "std_terminal": float(np.std(terminal, ddof=1)),
+        "p5": float(pct[0]),
+        "p20": float(pct[1]),
+        "p50": float(pct[2]),
+        "p80": float(pct[3]),
+        "p95": float(pct[4]),
+    }
+
 
 def first_touch_outcomes(
     paths: np.ndarray,
