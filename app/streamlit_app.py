@@ -15,7 +15,7 @@ if str(SRC_PATH) not in sys.path:
 
 from mt5_loader import connect_mt5, load_mt5_candles, make_synthetic_ohlc
 from simulator import estimate_mu_sigma, simulate_gbm_paths, simulate_bootstrap_paths
-from probability_engine import pathwise_tp_sl_metrics
+from probability_engine import pathwise_tp_sl_metrics, analytical_gbm_terminal_metrics
 from charts import make_price_path_figure
 from utils import append_probability_log, format_pct, format_price
 
@@ -145,6 +145,18 @@ def run_model(
         tp_points=tp_points,
         sl_points=sl_points,
     )
+
+    analytical_metrics = analytical_gbm_terminal_metrics(
+        current_price=current_price,
+        mu=mu,
+        sigma=sigma,
+        horizon=horizon,
+        direction=direction.lower(),
+        tp_points=tp_points,
+        sl_points=sl_points,
+    )
+
+    metrics.update(analytical_metrics)
 
     metrics.update({
         "symbol": st.session_state.get("symbol", "NAS100"),
