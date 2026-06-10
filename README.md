@@ -80,9 +80,7 @@ This is different from simply asking whether the terminal price finishes above o
 
 The model begins by calculating candle log returns:
 
-$$
-r_t = \log\left(\frac{S_t}{S_{t-1}}\right)
-$$
+$$r_t = \log\left(\frac{S_t}{S_{t-1}}\right)$$
 
 where:
 
@@ -91,13 +89,9 @@ where:
 
 Recent log returns are used to estimate drift and volatility:
 
-$$
-\mu = \frac{1}{n}\sum_{t=1}^{n} r_t
-$$
+$$\mu = \frac{1}{n}\sum_{t=1}^{n} r_t$$
 
-$$
-\sigma = \sqrt{\frac{1}{n-1}\sum_{t=1}^{n}(r_t-\mu)^2}
-$$
+$$\sigma = \sqrt{\frac{1}{n-1}\sum_{t=1}^{n}(r_t-\mu)^2}$$
 
 The volatility estimate is controlled by a rolling lookback window.
 
@@ -107,9 +101,7 @@ The volatility estimate is controlled by a rolling lookback window.
 
 The GBM model assumes the price follows the stochastic differential equation:
 
-$$
-dS_t = \mu S_t\,dt + \sigma S_t\,dW_t
-$$
+$$dS_t = \mu S_t\,dt + \sigma S_t\,dW_t$$
 
 where:
 
@@ -120,34 +112,21 @@ where:
 
 The closed-form solution is:
 
-$$
-S_T = S_0 \exp\left(\left(\mu - \frac{1}{2}\sigma^2\right)T + \sigma\sqrt{T}Z\right)
-$$
+$$S_T = S_0 \exp\left(\left(\mu - \frac{1}{2}\sigma^2\right)T + \sigma\sqrt{T}Z\right)$$
 
 where:
 
-$$
-Z \sim \mathcal{N}(0,1)
-$$
+$$Z \sim \mathcal{N}(0,1)$$
 
 In this project, time is measured in candle steps. For example, if the dashboard is running on M1 data and the simulation horizon is 20, then $T = 20$ one-minute candle steps.
 
 The Monte Carlo GBM simulation generates future log-return steps as:
 
-$$
-\log\left(\frac{S_{t+1}}{S_t}\right)
-=
-\left(\mu - \frac{1}{2}\sigma^2\right) + \sigma Z_t
-$$
+$$\log\left(\frac{S_{t+1}}{S_t}\right) = \left(\mu - \frac{1}{2}\sigma^2\right) + \sigma Z_t$$
 
 and reconstructs the price path using:
 
-$$
-S_{t+1}
-=
-S_t
-\exp\left(\left(\mu - \frac{1}{2}\sigma^2\right) + \sigma Z_t\right)
-$$
+$$S_{t+1} = S_t \exp\left(\left(\mu - \frac{1}{2}\sigma^2\right) + \sigma Z_t\right)$$
 
 ---
 
@@ -155,27 +134,11 @@ $$
 
 The analytical GBM benchmark uses the terminal log-price distribution:
 
-$$
-\log\left(\frac{S_T}{S_0}\right)
-\sim
-\mathcal{N}
-\left(
-\left(\mu - \frac{1}{2}\sigma^2\right)T,
-\sigma^2T
-\right)
-$$
+$$\log\left(\frac{S_T}{S_0}\right) \sim \mathcal{N}\left(\left(\mu - \frac{1}{2}\sigma^2\right)T, \sigma^2T\right)$$
 
 Equivalently:
 
-$$
-\log(S_T)
-\sim
-\mathcal{N}
-\left(
-\log(S_0) + \left(\mu - \frac{1}{2}\sigma^2\right)T,
-\sigma^2T
-\right)
-$$
+$$\log(S_T) \sim \mathcal{N}\left(\log(S_0) + \left(\mu - \frac{1}{2}\sigma^2\right)T, \sigma^2T\right)$$
 
 This allows the project to calculate closed-form terminal metrics without simulation.
 
@@ -183,25 +146,13 @@ This allows the project to calculate closed-form terminal metrics without simula
 
 Under GBM:
 
-$$
-\mathbb{E}[S_T] = S_0 e^{\mu T}
-$$
+$$\mathbb{E}[S_T] = S_0 e^{\mu T}$$
 
 ### Terminal Percentile Range
 
 For a chosen percentile $q$, the terminal price percentile is:
 
-$$
-S_q =
-\exp
-\left(
-\log(S_0)
-+
-\left(\mu - \frac{1}{2}\sigma^2\right)T
-+
-z_q\sigma\sqrt{T}
-\right)
-$$
+$$S_q = \exp\left(\log(S_0) + \left(\mu - \frac{1}{2}\sigma^2\right)T + z_q\sigma\sqrt{T}\right)$$
 
 where $z_q$ is the $q$-th quantile of the standard normal distribution.
 
@@ -211,37 +162,17 @@ The dashboard uses this to show a 5%-95% analytical GBM terminal range.
 
 For a price level $K$:
 
-$$
-\mathbb{P}(S_T > K)
-=
-1 -
-\Phi
-\left(
-\frac{
-\log(K/S_0)
--
-\left(\mu - \frac{1}{2}\sigma^2\right)T
-}{
-\sigma\sqrt{T}
-}
-\right)
-$$
+$$\mathbb{P}(S_T > K) = 1 - \Phi\left(\frac{\log(K/S_0) - \left(\mu - \frac{1}{2}\sigma^2\right)T}{\sigma\sqrt{T}}\right)$$
 
 where $\Phi$ is the standard normal cumulative distribution function.
 
 This is used to estimate terminal probabilities such as:
 
-$$
-\mathbb{P}(S_T > S_0)
-$$
+$$\mathbb{P}(S_T > S_0)$$
 
-$$
-\mathbb{P}(S_T \text{ beyond TP})
-$$
+$$\mathbb{P}(S_T \text{ beyond TP})$$
 
-$$
-\mathbb{P}(S_T \text{ beyond SL})
-$$
+$$\mathbb{P}(S_T \text{ beyond SL})$$
 
 Important: these are terminal probabilities. They do not measure whether TP or SL is touched first during the path.
 
@@ -259,45 +190,21 @@ For each simulated path, the engine checks:
 
 For a long setup:
 
-$$
-TP = S_0 + \text{TP points}
-$$
+$$TP = S_0 + \text{TP points}$$
 
-$$
-SL = S_0 - \text{SL points}
-$$
+$$SL = S_0 - \text{SL points}$$
 
 For a short setup:
 
-$$
-TP = S_0 - \text{TP points}
-$$
+$$TP = S_0 - \text{TP points}$$
 
-$$
-SL = S_0 + \text{SL points}
-$$
+$$SL = S_0 + \text{SL points}$$
 
 The main probabilities are estimated as:
 
-$$
-\mathbb{P}(TP \text{ before } SL)
-=
-\frac{
-\text{number of paths where TP is hit first}
-}{
-\text{total number of paths}
-}
-$$
+$$\mathbb{P}(TP \text{ before } SL) = \frac{\text{number of paths where TP is hit first}}{\text{total number of paths}}$$
 
-$$
-\mathbb{P}(SL \text{ before } TP)
-=
-\frac{
-\text{number of paths where SL is hit first}
-}{
-\text{total number of paths}
-}
-$$
+$$\mathbb{P}(SL \text{ before } TP) = \frac{\text{number of paths where SL is hit first}}{\text{total number of paths}}$$
 
 This is the core difference between the Monte Carlo pathwise engine and the analytical GBM benchmark.
 
@@ -309,15 +216,11 @@ The bootstrap model does not assume normally distributed returns.
 
 Instead, it samples from recent empirical log returns:
 
-$$
-r_t^* \sim \text{sample}\{r_1,r_2,\ldots,r_n\}
-$$
+$$r_t^* \sim \text{sample}\{r_1,r_2,\ldots,r_n\}$$
 
 and constructs future paths using:
 
-$$
-S_{t+1} = S_t e^{r_t^*}
-$$
+$$S_{t+1} = S_t e^{r_t^*}$$
 
 This allows the model to preserve some of the recent empirical behaviour of the market, including non-Gaussian features such as skew, fat tails, or clustered volatility.
 
