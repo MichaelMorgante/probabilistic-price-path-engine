@@ -406,43 +406,20 @@ try:
         )
 
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-        st.markdown("### Analytical GBM")
+        st.markdown("### Analytical GBM Benchmark")
         st.markdown(
             '<div class="small-muted">Terminal-price benchmark, not TP/SL touch-first probability.</div>',
             unsafe_allow_html=True,
         )
-
         st.markdown(
-            '<div class="metric-label">GBM Terminal TP Probability</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f'<div class="metric-big-green">{format_pct(metrics["gbm_analytical_terminal_tp_prob"])}</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            '<div class="metric-label">GBM Terminal SL Probability</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f'<div class="metric-big-red">{format_pct(metrics["gbm_analytical_terminal_sl_prob"])}</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            '<div class="metric-label">GBM Expected Price</div>',
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f'<div style="font-size:1.35rem;">{format_price(metrics["gbm_analytical_expected_price"])}</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            '<div class="small-muted">'
-            f'GBM move: {metrics["gbm_analytical_expected_move"]:+.2f} pts'
-            '</div>',
+            f"""
+            <div style="font-size:0.95rem; line-height:1.8; margin-top:8px;">
+                <div><span class="small-muted">P(up at horizon):</span> {format_pct(metrics["gbm_analytical_p_terminal_up"])}</div>
+                <div><span class="small-muted">Expected:</span> {format_price(metrics["gbm_analytical_expected_price"])}</div>
+                <div><span class="small-muted">5%-95%:</span> {format_price(metrics["gbm_analytical_p5"])} — {format_price(metrics["gbm_analytical_p95"])}</div>
+                <div><span class="small-muted">Terminal TP/SL:</span> {format_pct(metrics["gbm_analytical_terminal_tp_prob"])} / {format_pct(metrics["gbm_analytical_terminal_sl_prob"])}</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
