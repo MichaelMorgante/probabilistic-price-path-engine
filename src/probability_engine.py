@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from typing import Dict, Optional
+from math import erf, exp, log, sqrt
+
 import numpy as np
-from scipy.stats import norm
 
 def pathwise_tp_sl_metrics(
     paths: np.ndarray,
@@ -190,104 +191,78 @@ def terminal_direction_probability(
         "prob_flat": prob_flat,
     }
 
-def gbm_terminal_distribution_params(
+NORMAL_Z = {
+    0.05: -1.6448536269514729,
+    0.20: -0.8416212335729143,
+    0.50: 0.0,
+    0.80: 0.8416212335729143,
+    0.95: 1.6448536269514722,
+}
+
+
+def normal_cdf(x: float) -> float:
+    return 0.5 * (1.0 + erf(x / sqrt(2.0)))
+
+
+def analytical_gbm_terminal_metrics(
     current_price: float,
     mu: float,
     sigma: float,
     horizon: int,
+    direction: str = "long",
+    tp_points: float = 45.0,
+    sl_points: float = 25.0,
 ) -> Dict[str, float]:
+    """Closed-form GBM terminal distribution benchmark.
+
+    This is a terminal-price sanity check. It does not replace pathwise
+    TP-before-SL Monte Carlo, because TP/SL order depends on the path.
     """
-    Analytical GBM terminal log-price distribution.
+    if current_price <= 0:
+        raise ValueError("current_price must be positive.")
+    if horizon <= 0:
+        raise ValueError("horizon must be positive.")
+    if sigma <= 0:
+        raise ValueError("sigma must be positive.")
 
-    Under GBM:
+    direction = direction.lower()
+    if direction not in {"long", "short"}:
+        raise ValueError("direction must be 'long' or 'short'.")
 
-        log(S_T / S_0) ~ N((mu - 0.5 sigma^2)T, sigma^2 T)
+    log_mean = log(current_price) + (mu - 0.5 * sigma**2) * horizon
+    log_std = sigma * sqrt(horizon)
 
-    Here horizon is measured in candle steps, because mu and sigma are
-    estimated per candle return.
-    """
+    def p_above(level: float) -> float:
+        if level <= 0:
+            return 1.0
+        z = (log(level) - log_mean) / log_std
+        return 1.0 - normal_cdf(z)
 
-    mean_log_return = (mu - 0.5 * sigma**2) * horizon
-    std_log_return = sigma * np.sqrt(horizon)
+    if direction == "long":
+        tp_level = current_price + tp_points
+        sl_level = current_price - sl_points
+        p_terminal_beyond_tp = p_above(tp_level)
+        p_terminal_beyond_sl = 1.0 - p_above(sl_level)
+    else:
+        tp_level = current_price - tp_points
+        sl_level = current_price + sl_points
+        p_terminal_beyond_tp = 1.0 - p_above(tp_level)
+        p_terminal_beyond_sl = p_above(sl_level)
 
-    terminal_median = current_price * np.exp(mean_log_return)
-    terminal_mean = current_price * np.exp(mu * horizon)
-
-    return {
-        "mean_log_return": float(mean_log_return),
-        "std_log_return": float(std_log_return),
-        "terminal_median": float(terminal_median),
-        "terminal_mean": float(terminal_mean),
+    percentiles = {
+        f"gbm_analytical_p{int(q * 100)}": float(exp(log_mean + z * log_std))
+        for q, z in NORMAL_Z.items()
     }
 
-
-def gbm_terminal_probability_above(
-    current_price: float,
-    level: float,
-    mu: float,
-    sigma: float,
-    horizon: int,
-) -> float:
-    """
-    Analytical probability that GBM terminal price finishes above a level.
-    """
-
-    if sigma <= 0:
-        return float(current_price > level)
-
-    mean_log_return = (mu - 0.5 * sigma**2) * horizon
-    std_log_return = sigma * np.sqrt(horizon)
-
-    z = (np.log(level / current_price) - mean_log_return) / std_log_return
-
-    return float(1 - norm.cdf(z))
-
-
-def gbm_terminal_probability_below(
-    current_price: float,
-    level: float,
-    mu: float,
-    sigma: float,
-    horizon: int,
-) -> float:
-    """
-    Analytical probability that GBM terminal price finishes below a level.
-    """
-
-    if sigma <= 0:
-        return float(current_price < level)
-
-    mean_log_return = (mu - 0.5 * sigma**2) * horizon
-    std_log_return = sigma * np.sqrt(horizon)
-
-    z = (np.log(level / current_price) - mean_log_return) / std_log_return
-
-    return float(norm.cdf(z))
-
-
-def gbm_terminal_range(
-    current_price: float,
-    mu: float,
-    sigma: float,
-    horizon: int,
-    lower_q: float = 0.05,
-    upper_q: float = 0.95,
-) -> Dict[str, float]:
-    """
-    Analytical GBM terminal confidence range.
-
-    Default gives the 5%-95% terminal price range.
-    """
-
-    mean_log_return = (mu - 0.5 * sigma**2) * horizon
-    std_log_return = sigma * np.sqrt(horizon)
-
-    lower_price = current_price * np.exp(mean_log_return + std_log_return * norm.ppf(lower_q))
-    upper_price = current_price * np.exp(mean_log_return + std_log_return * norm.ppf(upper_q))
+    expected_price = current_price * exp(mu * horizon)
+    std_terminal = expected_price * sqrt(exp(sigma**2 * horizon) - 1.0)
 
     return {
-        "gbm_lower": float(lower_price),
-        "gbm_upper": float(upper_price),
-        "lower_q": lower_q,
-        "upper_q": upper_q,
+        "gbm_analytical_p_terminal_up": float(p_above(current_price)),
+        "gbm_analytical_expected_price": float(expected_price),
+        "gbm_analytical_expected_move": float(expected_price - current_price),
+        "gbm_analytical_std_terminal": float(std_terminal),
+        "gbm_analytical_terminal_tp_prob": float(p_terminal_beyond_tp),
+        "gbm_analytical_terminal_sl_prob": float(p_terminal_beyond_sl),
+        **percentiles,
     }
