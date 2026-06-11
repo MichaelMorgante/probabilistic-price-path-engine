@@ -53,7 +53,7 @@ def make_price_path_figure(
         ))
 
     percentiles = np.percentile(paths, [5, 20, 50, 80, 95], axis=0)
-    labels = ["5%", "20%", "50%", "80%", "95%"]
+    labels = ["5% quantile", "20% quantile", "50% median", "80% quantile", "95% quantile"]
     colors = ["#ff5b5b", "#c65a68", "#6da8ff", "#43d18d", "#43d18d"]
 
     for pct, label, color in zip(percentiles, labels, colors):
