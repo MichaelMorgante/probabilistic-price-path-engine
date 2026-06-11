@@ -163,10 +163,6 @@ def update_locked_trade_status(df: pd.DataFrame) -> None:
 
     if locked_trade["status"] != "active":
         return
-    
-    if locked_trade.get("skip_detection_once", False):
-        locked_trade["skip_detection_once"] = False
-        return
 
     entry_time = pd.to_datetime(locked_trade["entry_time"])
     trade_df = df[pd.to_datetime(df["time"]) > entry_time].copy()
