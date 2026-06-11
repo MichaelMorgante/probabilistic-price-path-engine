@@ -97,6 +97,8 @@ def timeframe_to_freq(tf: str) -> str:
         "M15": "15min",
         "M30": "30min",
         "H1": "1h",
+        "H4": "4h",
+        "D1": "1D",
     }.get(tf, "1min")
 
 
@@ -200,24 +202,24 @@ st.markdown(
 control_cols = st.columns([1.3, 1, 1, 1, 1, 1, 1])
 
 with control_cols[0]:
-    symbol = st.text_input("Symbol", value="NAS100", key="symbol")
+    symbol = st.text_input("Symbol", value="US100.cash", key="symbol")
 
 with control_cols[1]:
     timeframe = st.selectbox(
         "Timeframe",
-        ["M1", "M5", "M15", "M30", "H1"],
+        ["M1", "M5", "M15", "M30", "H1", "H4", "D1"],
         index=0,
         key="timeframe",
     )
 
 with control_cols[2]:
-    horizon = st.selectbox("Sim horizon", [5, 10, 20, 30, 50], index=2)
+    horizon = st.selectbox("Sim horizon", [5, 10, 20, 30, 50, 60, 90], index=2)
 
 with control_cols[3]:
-    n_paths = st.selectbox("Paths", [100, 500, 1000, 5000], index=2)
+    n_paths = st.selectbox("Paths", [100, 500, 1000, 5000, 10000, 25000, 50000], index=2)
 
 with control_cols[4]:
-    model_type = st.selectbox("Model", ["GBM", "Bootstrap"], index=0)
+    model_type = st.selectbox("Model", ["GBM", "Bootstrap"], index=1)
 
 with control_cols[5]:
     direction = st.selectbox("Direction", ["Long", "Short"], index=0)
@@ -233,7 +235,7 @@ with settings_cols[0]:
         "Vol window",
         min_value=20,
         max_value=500,
-        value=80,
+        value=90,
         step=10,
     )
 
@@ -245,7 +247,7 @@ with settings_cols[2]:
         "TP points",
         min_value=1.0,
         max_value=1000.0,
-        value=45.0,
+        value=29.0,
         step=1.0,
     )
 
@@ -254,7 +256,7 @@ with settings_cols[3]:
         "SL points",
         min_value=1.0,
         max_value=1000.0,
-        value=25.0,
+        value=29.0,
         step=1.0,
     )
 
