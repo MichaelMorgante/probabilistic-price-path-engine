@@ -263,6 +263,48 @@ def render_locked_trade_panel(current_price: float) -> None:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+def render_locked_trade_log() -> None:
+    if not st.session_state.locked_trade_log:
+        return
+
+    st.markdown(
+        """
+        <div class="panel" style="margin-top:16px;">
+            <div style="font-size:1.1rem; font-weight:800; letter-spacing:0.08em;">
+                LOCKED TRADE SESSION LOG
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    rows = []
+    for i, trade in enumerate(st.session_state.locked_trade_log, start=1):
+        rows.append({
+            "#": i,
+            "Direction": trade["direction"].upper(),
+            "Entry Time": trade["entry_time"],
+            "Exit Time": trade["exit_time"],
+            "Entry": round(trade["entry_price"], 2),
+            "TP": round(trade["tp_level"], 2),
+            "SL": round(trade["sl_level"], 2),
+            "Result": trade["result"],
+            "Candles": trade["candles_to_hit"],
+            "P(TP) at lock": f'{trade["p_tp_at_lock"]:.1%}',
+            "P(SL) at lock": f'{trade["p_sl_at_lock"]:.1%}',
+        })
+
+    st.dataframe(
+        pd.DataFrame(rows),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    if st.button("Clear Trade Log", use_container_width=True):
+        st.session_state.locked_trade_log = []
+        st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
 def default_refresh_seconds(tf: str) -> int:
     return {
         "M1": 60,
@@ -528,6 +570,7 @@ try:
         )
 
         render_locked_trade_panel(current_price=float(df["Close"].iloc[-1]))
+        render_locked_trade_log()
 
     with right:
         st.markdown('<div class="panel">', unsafe_allow_html=True)
