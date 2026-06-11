@@ -89,7 +89,6 @@ CUSTOM_CSS = """
 """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
-
 def timeframe_to_freq(tf: str) -> str:
     return {
         "M1": "1min",
@@ -100,6 +99,101 @@ def timeframe_to_freq(tf: str) -> str:
         "H4": "4h",
         "D1": "1D",
     }.get(tf, "1min")
+
+def initialise_trade_state() -> None:
+    if "locked_trade" not in st.session_state:
+        st.session_state.locked_trade = None
+
+    if "locked_trade_log" not in st.session_state:
+        st.session_state.locked_trade_log = []
+
+initialise_trade_state()
+
+def create_locked_trade(
+    direction: str,
+    entry_price: float,
+    tp_points: float,
+    sl_points: float,
+    candle_time: str,
+    p_tp_at_lock: float,
+    p_sl_at_lock: float,
+) -> dict:
+    direction = direction.lower()
+
+    if direction == "long":
+        tp_level = entry_price + tp_points
+        sl_level = entry_price - sl_points
+    elif direction == "short":
+        tp_level = entry_price - tp_points
+        sl_level = entry_price + sl_points
+    else:
+        raise ValueError("direction must be 'long' or 'short'.")
+
+    return {
+        "status": "active",
+        "direction": direction,
+        "entry_price": float(entry_price),
+        "tp_level": float(tp_level),
+        "sl_level": float(sl_level),
+        "entry_time": candle_time,
+        "entry_timestamp": pd.Timestamp.now(),
+        "p_tp_at_lock": float(p_tp_at_lock),
+        "p_sl_at_lock": float(p_sl_at_lock),
+        "exit_time": None,
+        "exit_timestamp": None,
+        "result": None,
+        "exit_price": None,
+        "candles_to_hit": None,
+    }
+
+
+def render_locked_trade_panel(current_price: float) -> None:
+    locked_trade = st.session_state.locked_trade
+
+    st.markdown(
+        """
+        <div class="panel" style="margin-top:16px;">
+            <div style="font-size:1.1rem; font-weight:800; letter-spacing:0.08em;">
+                LOCKED HYPOTHETICAL TRADE
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if locked_trade is None:
+        st.markdown(
+            '<div class="small-muted" style="margin-top:8px;">No locked trade. Use Lock Long or Lock Short from the output panel.</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+        return
+
+    direction = locked_trade["direction"]
+    entry_price = locked_trade["entry_price"]
+    tp_level = locked_trade["tp_level"]
+    sl_level = locked_trade["sl_level"]
+    move = current_price - entry_price
+    if direction == "short":
+        move = entry_price - current_price
+
+    direction_colour = "#43d18d" if direction == "long" else "#ff5b5b"
+
+    st.markdown(
+        f"""
+        <div style="margin-top:10px; line-height:1.8;">
+            <div><span class="small-muted">Mode:</span> <span style="color:{direction_colour}; font-weight:700;">LOCKED {direction.upper()}</span></div>
+            <div><span class="small-muted">Entry:</span> {entry_price:,.2f}</div>
+            <div><span class="small-muted">TP:</span> <span style="color:#43d18d;">{tp_level:,.2f}</span></div>
+            <div><span class="small-muted">SL:</span> <span style="color:#ff5b5b;">{sl_level:,.2f}</span></div>
+            <div><span class="small-muted">Current:</span> {current_price:,.2f}</div>
+            <div><span class="small-muted">Move from entry:</span> {move:+.2f} pts</div>
+            <div><span class="small-muted">Status:</span> {locked_trade["status"].upper()}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
 def default_refresh_seconds(tf: str) -> int:
     return {
@@ -363,6 +457,8 @@ try:
             config={"displayModeBar": False},
         )
 
+        render_locked_trade_panel(current_price=float(df["Close"].iloc[-1]))
+
     with right:
         st.markdown('<div class="panel">', unsafe_allow_html=True)
         st.markdown("### MODEL 2 OUTPUTS")
@@ -370,6 +466,43 @@ try:
             f'<div class="small-muted">As of {metrics["last_candle_time"]}</div>',
             unsafe_allow_html=True,
         )
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+
+        st.markdown("### Trade Lock")
+
+        lock_col_1, lock_col_2 = st.columns(2)
+
+        with lock_col_1:
+            if st.button("Lock Long", use_container_width=True):
+                st.session_state.locked_trade = create_locked_trade(
+                    direction="long",
+                    entry_price=float(metrics["entry_price"]),
+                    tp_points=float(tp_points),
+                    sl_points=float(sl_points),
+                    candle_time=str(metrics["last_candle_time"]),
+                    p_tp_at_lock=float(metrics["p_tp_first"]),
+                    p_sl_at_lock=float(metrics["p_sl_first"]),
+                )
+                st.rerun()
+
+        with lock_col_2:
+            if st.button("Lock Short", use_container_width=True):
+                st.session_state.locked_trade = create_locked_trade(
+                    direction="short",
+                    entry_price=float(metrics["entry_price"]),
+                    tp_points=float(tp_points),
+                    sl_points=float(sl_points),
+                    candle_time=str(metrics["last_candle_time"]),
+                    p_tp_at_lock=float(metrics["p_tp_first"]),
+                    p_sl_at_lock=float(metrics["p_sl_first"]),
+                )
+                st.rerun()
+
+        if st.session_state.locked_trade is not None:
+            if st.button("Clear Locked Trade", use_container_width=True):
+                st.session_state.locked_trade = None
+                st.rerun()
+
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
         tp_class = (
