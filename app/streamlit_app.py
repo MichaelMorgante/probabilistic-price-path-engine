@@ -188,12 +188,16 @@ def update_locked_trade_status(df: pd.DataFrame) -> None:
         else:
             continue
 
+        exit_time = pd.to_datetime(row["time"])
+        minutes_to_hit = (exit_time - entry_time).total_seconds() / 60
+
         locked_trade["status"] = "completed"
         locked_trade["result"] = result
         locked_trade["exit_price"] = float(exit_price)
         locked_trade["exit_time"] = str(row["time"])
         locked_trade["exit_timestamp"] = pd.Timestamp.now()
         locked_trade["candles_to_hit"] = int(idx + 1)
+        locked_trade["minutes_to_hit"] = float(minutes_to_hit)
 
         st.session_state.locked_trade_log.append(locked_trade.copy())
         st.session_state.locked_trade = None
@@ -227,7 +231,7 @@ def render_locked_trade_panel(current_price: float) -> None:
                 <div style="margin-top:10px;">
                     <span class="small-muted">Latest completed lock:</span>
                     <span style="color:{result_colour}; font-weight:800;"> {latest["result"]} hit</span>
-                    <span class="small-muted"> after {latest["candles_to_hit"]} candles.</span>
+                    <span class="small-muted"> after {latest["candles_to_hit"]} candles / {latest.get("minutes_to_hit", 0):.1f} mins.</span>
                 </div>
                 """,
                 unsafe_allow_html=True,
@@ -289,6 +293,7 @@ def render_locked_trade_log() -> None:
             "SL": round(trade["sl_level"], 2),
             "Result": trade["result"],
             "Candles": trade["candles_to_hit"],
+            "Minutes": round(trade.get("minutes_to_hit", 0), 1),
             "P(TP) at lock": f'{trade["p_tp_at_lock"]:.1%}',
             "P(SL) at lock": f'{trade["p_sl_at_lock"]:.1%}',
         })
