@@ -525,6 +525,7 @@ with settings_cols[4]:
         [
             "Timeframe default",
             "MT5 candle close",
+            "5 seconds",
             "10 seconds",
             "60 seconds",
             "5 minutes",
@@ -536,6 +537,7 @@ with settings_cols[4]:
     )
 
 refresh_seconds_map = {
+    "5 seconds": 5,
     "10 seconds": 10,
     "60 seconds": 60,
     "5 minutes": 300,
