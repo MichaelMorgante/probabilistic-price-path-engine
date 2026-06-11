@@ -80,7 +80,7 @@ def make_price_path_figure(
         y=metrics["tp_level"],
         line_dash="dash",
         line_color="#43d18d",
-        annotation_text=f'TP {metrics["tp_level"]:,.2f}',
+        annotation_text=f'TP {metrics["tp_level"]:,.1f}',
         annotation_position="right",
     )
 
@@ -88,7 +88,7 @@ def make_price_path_figure(
         y=metrics["sl_level"],
         line_dash="dash",
         line_color="#ff5b5b",
-        annotation_text=f'SL {metrics["sl_level"]:,.2f}',
+        annotation_text=f'SL {metrics["sl_level"]:,.1f}',
         annotation_position="right",
     )
 
