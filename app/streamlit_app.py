@@ -357,7 +357,7 @@ try:
         )
 
         st.markdown(
-            f'<div class="small-muted">P(TP at any time): {format_pct(metrics["p_tp_touched"])}</div>',
+            f'<div class="small-muted">P(TP at any time): <span style="color:#43d18d;">{format_pct(metrics["p_tp_touched"])}</span></div>',
             unsafe_allow_html=True,
         )
 
@@ -372,7 +372,7 @@ try:
         )
 
         st.markdown(
-            f'<div class="small-muted">P(SL at any time): {format_pct(metrics["p_sl_touched"])}</div>',
+            f'<div class="small-muted">P(SL at any time): <span style="color:#ff5b5b;">{format_pct(metrics["p_sl_touched"])}</span></div>',
             unsafe_allow_html=True,
         )
 
