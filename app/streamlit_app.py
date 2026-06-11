@@ -376,12 +376,13 @@ try:
             unsafe_allow_html=True,
         )
 
+        st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         st.markdown(
-            '<div style="height:6px;"></div>',
+            '<div class="metric-label">No hit within horizon</div>',
             unsafe_allow_html=True,
         )
         st.markdown(
-            f'<div class="small-muted">No hit within horizon: <span style="color:#9aa6b6;">{format_pct(metrics["p_neither"])}</span></div>',
+            f'<div style="font-size:1.15rem; color:#9aa6b6;">{format_pct(metrics["p_neither"])}</div>',
             unsafe_allow_html=True,
         )
 
