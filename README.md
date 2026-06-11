@@ -369,30 +369,36 @@ If MT5 is unavailable or the symbol cannot be loaded, the dashboard can fall bac
 
 ## Current Development Status
 
-This project is currently in early development.
+This project is currently in active development.
 
 Completed:
 
 - clean Python project structure
 - Streamlit dashboard
-- MT5 candle loading
+- MT5 candle loading for `US100.cash`
 - synthetic data fallback
 - GBM Monte Carlo simulation
 - historical bootstrap simulation
-- pathwise TP/SL probability engine
 - analytical GBM terminal benchmark
-- dark dashboard visualisation
+- pathwise TP/SL probability engine
+- any-time TP/SL touch probabilities
+- no-hit-within-horizon probability
+- configurable simulation controls
+- configurable refresh interval
+- TP/SL price labels on the chart
+- clearer quantile labelling
+- locked hypothetical trade mode
+- locked trade hit detection
+- session-based locked trade log
+- README methodology section with typeset GBM equations
+- dashboard screenshots
 
 Planned improvements:
 
-- default dashboard settings for `US100.cash`
-- clearer percentile cone labelling
-- TP/SL price labels on the chart
-- larger simulation options
-- candle-close refresh logic
-- locked hypothetical trade mode
 - research notebooks
-- improved README screenshots
+- fuller validation examples comparing GBM, bootstrap, and analytical GBM
+- optional MT5 bid/ask-based locked entry
+- improved locked trade card layout
 - regime-adjusted probability model
 - possible integration with VWAP probability-band context
 
