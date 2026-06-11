@@ -6,6 +6,9 @@ __pycache__/
 data/historical/*
 reports/logs/*
 reports/figures/*
+!reports/figures/.gitkeep
+!reports/figures/dashboard_main.png
+!reports/figures/locked_trade_log_2trade.png
 live_artifacts/states/*
 
 .env

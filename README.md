@@ -30,6 +30,14 @@ This project is not intended to place trades automatically. It is a research and
 
 ---
 
+## Dashboard Preview
+
+![Dashboard preview](reports/figures/dashboard_main.png)
+
+## Locked Trade Tracker
+
+![Locked trade tracker](reports/figures/locked_trade_log_2trade.png)
+
 ## Current Features
 
 ### Live/Synthetic Data
