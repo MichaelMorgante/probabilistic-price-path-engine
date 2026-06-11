@@ -377,7 +377,11 @@ try:
         )
 
         st.markdown(
-            f'<div class="small-muted">P(neither hit): <span style="color:#9aa6b6;">{format_pct(metrics["p_neither"])}</span></div>',
+            '<div style="height:6px;"></div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="small-muted">No hit within horizon: <span style="color:#9aa6b6;">{format_pct(metrics["p_neither"])}</span></div>',
             unsafe_allow_html=True,
         )
 
