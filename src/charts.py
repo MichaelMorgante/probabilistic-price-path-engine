@@ -80,14 +80,16 @@ def make_price_path_figure(
         y=metrics["tp_level"],
         line_dash="dash",
         line_color="#43d18d",
-        annotation_text="TP",
+        annotation_text=f'TP {metrics["tp_level"]:,.2f}',
+        annotation_position="right",
     )
 
     fig.add_hline(
         y=metrics["sl_level"],
         line_dash="dash",
         line_color="#ff5b5b",
-        annotation_text="SL",
+        annotation_text=f'SL {metrics["sl_level"]:,.2f}',
+        annotation_position="right",
     )
 
     fig.add_vline(
