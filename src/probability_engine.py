@@ -33,6 +33,8 @@ def pathwise_tp_sl_metrics(
     tp_first = 0
     sl_first = 0
     neither = 0
+    tp_touched = 0
+    sl_touched = 0
     tp_times = []
     sl_times = []
 
@@ -42,6 +44,12 @@ def pathwise_tp_sl_metrics(
 
         first_tp = int(tp_idx[0]) if len(tp_idx) > 0 else None
         first_sl = int(sl_idx[0]) if len(sl_idx) > 0 else None
+
+        if first_tp is not None:
+            tp_touched += 1
+
+        if first_sl is not None:
+            sl_touched += 1
 
         if first_tp is None and first_sl is None:
             neither += 1
@@ -67,6 +75,8 @@ def pathwise_tp_sl_metrics(
         "p_tp_first": float(tp_first / n_paths),
         "p_sl_first": float(sl_first / n_paths),
         "p_neither": float(neither / n_paths),
+        "p_tp_touched": float(tp_touched / n_paths),
+        "p_sl_touched": float(sl_touched / n_paths),
         "avg_time_to_tp": float(np.mean(tp_times)) if tp_times else float("nan"),
         "avg_time_to_sl": float(np.mean(sl_times)) if sl_times else float("nan"),
         "p_terminal_up": float(np.mean(terminal > entry_price)),

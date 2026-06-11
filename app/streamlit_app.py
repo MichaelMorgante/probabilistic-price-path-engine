@@ -356,6 +356,11 @@ try:
             unsafe_allow_html=True,
         )
 
+        st.markdown(
+            f'<div class="small-muted">P(TP at any time): {format_pct(metrics["p_tp_touched"])}</div>',
+            unsafe_allow_html=True,
+        )
+
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="metric-label">P(SL before TP)</div>',
@@ -363,6 +368,11 @@ try:
         )
         st.markdown(
             f'<div class="metric-big-red">{format_pct(metrics["p_sl_first"])}</div>',
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f'<div class="small-muted">P(SL at any time): {format_pct(metrics["p_sl_touched"])}</div>',
             unsafe_allow_html=True,
         )
 
