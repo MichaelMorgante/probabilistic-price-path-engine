@@ -101,6 +101,16 @@ def timeframe_to_freq(tf: str) -> str:
         "D1": "1D",
     }.get(tf, "1min")
 
+def default_refresh_seconds(tf: str) -> int:
+    return {
+        "M1": 60,
+        "M5": 300,
+        "M15": 900,
+        "M30": 1800,
+        "H1": 3600,
+        "H4": 14400,
+        "D1": 86400,
+    }.get(tf, 60)
 
 def run_model(
     df: pd.DataFrame,
@@ -262,6 +272,26 @@ with settings_cols[3]:
 
 with settings_cols[4]:
     auto_refresh = st.toggle("Auto refresh", value=False)
+
+    refresh_mode = st.selectbox(
+        "Refresh interval",
+        ["Timeframe default", "60 seconds", "5 minutes", "15 minutes", "30 minutes", "1 hour"],
+        index=0,
+    )
+
+refresh_seconds_map = {
+    "60 seconds": 60,
+    "5 minutes": 300,
+    "15 minutes": 900,
+    "30 minutes": 1800,
+    "1 hour": 3600,
+}
+
+refresh_seconds = (
+    default_refresh_seconds(timeframe)
+    if refresh_mode == "Timeframe default"
+    else refresh_seconds_map[refresh_mode]
+)
 
 
 data_status = "Synthetic data"
@@ -462,5 +492,5 @@ except Exception as e:
 
 
 if auto_refresh:
-    time.sleep(10)
+    time.sleep(refresh_seconds)
     st.rerun()
