@@ -376,6 +376,11 @@ try:
             unsafe_allow_html=True,
         )
 
+        st.markdown(
+            f'<div class="small-muted">P(neither hit): <span style="color:#9aa6b6;">{format_pct(metrics["p_neither"])}</span></div>',
+            unsafe_allow_html=True,
+        )
+
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="metric-label">Expected Price</div>',
