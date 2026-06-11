@@ -110,6 +110,9 @@ def initialise_trade_state() -> None:
     if "latest_metrics_snapshot" not in st.session_state:
         st.session_state.latest_metrics_snapshot = None
 
+    if "last_seen_candle_time" not in st.session_state:
+        st.session_state.last_seen_candle_time = None
+
 initialise_trade_state()
 
 def create_locked_trade(
@@ -133,7 +136,6 @@ def create_locked_trade(
 
     return {
         "status": "active",
-        "skip_detection_once": True,
         "direction": direction,
         "entry_price": float(entry_price),
         "tp_level": float(tp_level),
@@ -164,54 +166,64 @@ def update_locked_trade_status(df: pd.DataFrame) -> None:
     if locked_trade["status"] != "active":
         return
 
-    entry_time = pd.to_datetime(locked_trade["entry_time"])
-    trade_df = df[pd.to_datetime(df["time"]) > entry_time].copy()
+    if df.empty:
+        return
 
-    if trade_df.empty:
+    entry_time = pd.to_datetime(locked_trade["entry_time"])
+    latest_candle = df.iloc[-1]
+    latest_time = pd.to_datetime(latest_candle["time"])
+
+    # Do not evaluate the entry candle itself.
+    if latest_time <= entry_time:
         return
 
     direction = locked_trade["direction"]
     tp_level = locked_trade["tp_level"]
     sl_level = locked_trade["sl_level"]
 
-    for idx, row in trade_df.reset_index(drop=True).iterrows():
-        high = float(row["High"])
-        low = float(row["Low"])
+    high = float(latest_candle["High"])
+    low = float(latest_candle["Low"])
 
-        if direction == "long":
-            tp_hit = high >= tp_level
-            sl_hit = low <= sl_level
-        else:
-            tp_hit = low <= tp_level
-            sl_hit = high >= sl_level
+    if direction == "long":
+        tp_hit = high >= tp_level
+        sl_hit = low <= sl_level
+    else:
+        tp_hit = low <= tp_level
+        sl_hit = high >= sl_level
 
-        if tp_hit and sl_hit:
-            result = "SL"
-            exit_price = sl_level
-        elif tp_hit:
-            result = "TP"
-            exit_price = tp_level
-        elif sl_hit:
-            result = "SL"
-            exit_price = sl_level
-        else:
-            continue
+    if tp_hit and sl_hit:
+        # Conservative rule for same-candle TP/SL touch.
+        result = "SL"
+        exit_price = sl_level
+    elif tp_hit:
+        result = "TP"
+        exit_price = tp_level
+    elif sl_hit:
+        result = "SL"
+        exit_price = sl_level
+    else:
+        return
 
-        exit_time = pd.to_datetime(row["time"])
-        minutes_to_hit = (exit_time - entry_time).total_seconds() / 60
+    minutes_to_hit = (latest_time - entry_time).total_seconds() / 60
 
-        locked_trade["status"] = "completed"
-        locked_trade["result"] = result
-        locked_trade["exit_price"] = float(exit_price)
-        locked_trade["exit_time"] = str(row["time"])
-        locked_trade["exit_timestamp"] = pd.Timestamp.now()
-        locked_trade["candles_to_hit"] = int(idx + 1)
-        locked_trade["minutes_to_hit"] = float(minutes_to_hit)
+    # Estimate candle count using dataframe rows between entry and latest candle.
+    candles_to_hit = len(
+        df[
+            (pd.to_datetime(df["time"]) > entry_time)
+            & (pd.to_datetime(df["time"]) <= latest_time)
+        ]
+    )
 
-        st.session_state.locked_trade_log.append(locked_trade.copy())
-        st.session_state.locked_trade = None
-        break
+    locked_trade["status"] = "completed"
+    locked_trade["result"] = result
+    locked_trade["exit_price"] = float(exit_price)
+    locked_trade["exit_time"] = str(latest_candle["time"])
+    locked_trade["exit_timestamp"] = pd.Timestamp.now()
+    locked_trade["candles_to_hit"] = int(candles_to_hit)
+    locked_trade["minutes_to_hit"] = float(minutes_to_hit)
 
+    st.session_state.locked_trade_log.append(locked_trade.copy())
+    st.session_state.locked_trade = None
 
 def render_locked_trade_panel(current_price: float) -> None:
     locked_trade = st.session_state.locked_trade
@@ -329,6 +341,23 @@ def default_refresh_seconds(tf: str) -> int:
         "H4": 14400,
         "D1": 86400,
     }.get(tf, 60)
+
+def get_latest_candle_time(symbol: str, timeframe: str) -> str | None:
+    """
+    Return the latest MT5 candle timestamp.
+    Used for MT5 candle-close refresh mode.
+    """
+
+    ok, _ = connect_mt5()
+    if not ok:
+        return None
+
+    latest_df = load_mt5_candles(symbol, timeframe=timeframe, bars=5)
+
+    if latest_df is None or latest_df.empty:
+        return None
+
+    return str(latest_df["time"].iloc[-1])
 
 def run_model(
     df: pd.DataFrame,
@@ -493,7 +522,16 @@ with settings_cols[4]:
 
     refresh_mode = st.selectbox(
         "Refresh interval",
-        ["Timeframe default", "10 seconds", "60 seconds", "5 minutes", "15 minutes", "30 minutes", "1 hour"],
+        [
+            "Timeframe default",
+            "MT5 candle close",
+            "10 seconds",
+            "60 seconds",
+            "5 minutes",
+            "15 minutes",
+            "30 minutes",
+            "1 hour",
+        ],
         index=0,
     )
 
@@ -508,7 +546,7 @@ refresh_seconds_map = {
 
 refresh_seconds = (
     default_refresh_seconds(timeframe)
-    if refresh_mode == "Timeframe default"
+    if refresh_mode in {"Timeframe default", "MT5 candle close"}
     else refresh_seconds_map[refresh_mode]
 )
 
@@ -537,6 +575,11 @@ if df is None:
         seed=42,
         freq=timeframe_to_freq(timeframe),
     )
+
+current_loaded_candle_time = str(df["time"].iloc[-1]) if df is not None and not df.empty else None
+
+if st.session_state.last_seen_candle_time is None:
+    st.session_state.last_seen_candle_time = current_loaded_candle_time
 
 
 try:
@@ -751,5 +794,21 @@ except Exception as e:
 
 
 if auto_refresh:
-    time.sleep(refresh_seconds)
-    st.rerun()
+    if refresh_mode == "MT5 candle close" and use_mt5:
+        time.sleep(2)
+
+        latest_candle_time = get_latest_candle_time(symbol, timeframe)
+
+        if latest_candle_time is not None:
+            if latest_candle_time != st.session_state.last_seen_candle_time:
+                st.session_state.last_seen_candle_time = latest_candle_time
+                st.rerun()
+            else:
+                st.rerun()
+        else:
+            time.sleep(refresh_seconds)
+            st.rerun()
+
+    else:
+        time.sleep(refresh_seconds)
+        st.rerun()
