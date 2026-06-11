@@ -382,7 +382,7 @@ try:
             unsafe_allow_html=True,
         )
         st.markdown(
-            f'<div style="font-size:1.15rem; color:#9aa6b6;">{format_pct(metrics["p_neither"])}</div>',
+            f'<div style="font-size:1.15rem; color:#d6dde8;">{format_pct(metrics["p_neither"])}</div>',
             unsafe_allow_html=True,
         )
 
