@@ -107,18 +107,20 @@ def initialise_trade_state() -> None:
     if "locked_trade_log" not in st.session_state:
         st.session_state.locked_trade_log = []
 
+    if "latest_metrics_snapshot" not in st.session_state:
+        st.session_state.latest_metrics_snapshot = None
+
 initialise_trade_state()
 
 def create_locked_trade(
     direction: str,
-    entry_price: float,
+    metrics_snapshot: dict,
     tp_points: float,
     sl_points: float,
-    candle_time: str,
-    p_tp_at_lock: float,
-    p_sl_at_lock: float,
 ) -> dict:
     direction = direction.lower()
+
+    entry_price = float(metrics_snapshot["entry_price"])
 
     if direction == "long":
         tp_level = entry_price + tp_points
@@ -131,19 +133,26 @@ def create_locked_trade(
 
     return {
         "status": "active",
+        "skip_detection_once": True,
         "direction": direction,
         "entry_price": float(entry_price),
         "tp_level": float(tp_level),
         "sl_level": float(sl_level),
-        "entry_time": candle_time,
+        "entry_time": str(metrics_snapshot["last_candle_time"]),
         "entry_timestamp": pd.Timestamp.now(),
-        "p_tp_at_lock": float(p_tp_at_lock),
-        "p_sl_at_lock": float(p_sl_at_lock),
+        "p_tp_at_lock": float(metrics_snapshot["p_tp_first"]),
+        "p_sl_at_lock": float(metrics_snapshot["p_sl_first"]),
+        "p_tp_touched_at_lock": float(metrics_snapshot.get("p_tp_touched", 0.0)),
+        "p_sl_touched_at_lock": float(metrics_snapshot.get("p_sl_touched", 0.0)),
+        "model_type_at_lock": str(metrics_snapshot.get("model_type", "")),
+        "horizon_at_lock": int(metrics_snapshot.get("horizon", 0)),
+        "n_paths_at_lock": int(metrics_snapshot.get("n_paths", 0)),
         "exit_time": None,
         "exit_timestamp": None,
         "result": None,
         "exit_price": None,
         "candles_to_hit": None,
+        "minutes_to_hit": None,
     }
 
 def update_locked_trade_status(df: pd.DataFrame) -> None:
@@ -544,6 +553,8 @@ try:
         seed=42,
     )
 
+    st.session_state.latest_metrics_snapshot = metrics.copy()
+
     update_locked_trade_status(df)
 
     append_probability_log(
@@ -592,27 +603,23 @@ try:
 
         with lock_col_1:
             if st.button("Lock Long", use_container_width=True):
+                snapshot = st.session_state.latest_metrics_snapshot or metrics.copy()
                 st.session_state.locked_trade = create_locked_trade(
                     direction="long",
-                    entry_price=float(metrics["entry_price"]),
+                    metrics_snapshot=snapshot,
                     tp_points=float(tp_points),
                     sl_points=float(sl_points),
-                    candle_time=str(metrics["last_candle_time"]),
-                    p_tp_at_lock=float(metrics["p_tp_first"]),
-                    p_sl_at_lock=float(metrics["p_sl_first"]),
                 )
                 st.rerun()
 
         with lock_col_2:
             if st.button("Lock Short", use_container_width=True):
+                snapshot = st.session_state.latest_metrics_snapshot or metrics.copy()
                 st.session_state.locked_trade = create_locked_trade(
                     direction="short",
-                    entry_price=float(metrics["entry_price"]),
+                    metrics_snapshot=snapshot,
                     tp_points=float(tp_points),
                     sl_points=float(sl_points),
-                    candle_time=str(metrics["last_candle_time"]),
-                    p_tp_at_lock=float(metrics["p_tp_first"]),
-                    p_sl_at_lock=float(metrics["p_sl_first"]),
                 )
                 st.rerun()
 
