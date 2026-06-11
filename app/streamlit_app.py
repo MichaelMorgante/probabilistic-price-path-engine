@@ -146,6 +146,59 @@ def create_locked_trade(
         "candles_to_hit": None,
     }
 
+def update_locked_trade_status(df: pd.DataFrame) -> None:
+    locked_trade = st.session_state.locked_trade
+
+    if locked_trade is None:
+        return
+
+    if locked_trade["status"] != "active":
+        return
+
+    entry_time = pd.to_datetime(locked_trade["entry_time"])
+    trade_df = df[pd.to_datetime(df["time"]) >= entry_time].copy()
+
+    if trade_df.empty:
+        return
+
+    direction = locked_trade["direction"]
+    tp_level = locked_trade["tp_level"]
+    sl_level = locked_trade["sl_level"]
+
+    for idx, row in trade_df.reset_index(drop=True).iterrows():
+        high = float(row["High"])
+        low = float(row["Low"])
+
+        if direction == "long":
+            tp_hit = high >= tp_level
+            sl_hit = low <= sl_level
+        else:
+            tp_hit = low <= tp_level
+            sl_hit = high >= sl_level
+
+        if tp_hit and sl_hit:
+            result = "SL"
+            exit_price = sl_level
+        elif tp_hit:
+            result = "TP"
+            exit_price = tp_level
+        elif sl_hit:
+            result = "SL"
+            exit_price = sl_level
+        else:
+            continue
+
+        locked_trade["status"] = "completed"
+        locked_trade["result"] = result
+        locked_trade["exit_price"] = float(exit_price)
+        locked_trade["exit_time"] = str(row["time"])
+        locked_trade["exit_timestamp"] = pd.Timestamp.now()
+        locked_trade["candles_to_hit"] = int(idx + 1)
+
+        st.session_state.locked_trade_log.append(locked_trade.copy())
+        st.session_state.locked_trade = None
+        break
+
 
 def render_locked_trade_panel(current_price: float) -> None:
     locked_trade = st.session_state.locked_trade
@@ -162,9 +215,24 @@ def render_locked_trade_panel(current_price: float) -> None:
 
     if locked_trade is None:
         st.markdown(
-            '<div class="small-muted" style="margin-top:8px;">No locked trade. Use Lock Long or Lock Short from the output panel.</div>',
+            '<div class="small-muted" style="margin-top:8px;">No active locked trade. Use Lock Long or Lock Short from the output panel.</div>',
             unsafe_allow_html=True,
         )
+
+        if st.session_state.locked_trade_log:
+            latest = st.session_state.locked_trade_log[-1]
+            result_colour = "#43d18d" if latest["result"] == "TP" else "#ff5b5b"
+            st.markdown(
+                f"""
+                <div style="margin-top:10px;">
+                    <span class="small-muted">Latest completed lock:</span>
+                    <span style="color:{result_colour}; font-weight:800;"> {latest["result"]} hit</span>
+                    <span class="small-muted"> after {latest["candles_to_hit"]} candles.</span>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
         st.markdown("</div>", unsafe_allow_html=True)
         return
 
@@ -428,6 +496,8 @@ try:
         sl_points=float(sl_points),
         seed=42,
     )
+
+    update_locked_trade_status(df)
 
     append_probability_log(
         metrics=metrics,
