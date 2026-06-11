@@ -275,11 +275,12 @@ with settings_cols[4]:
 
     refresh_mode = st.selectbox(
         "Refresh interval",
-        ["Timeframe default", "60 seconds", "5 minutes", "15 minutes", "30 minutes", "1 hour"],
+        ["Timeframe default", "10 seconds", "60 seconds", "5 minutes", "15 minutes", "30 minutes", "1 hour"],
         index=0,
     )
 
 refresh_seconds_map = {
+    "10 seconds": 10,
     "60 seconds": 60,
     "5 minutes": 300,
     "15 minutes": 900,
