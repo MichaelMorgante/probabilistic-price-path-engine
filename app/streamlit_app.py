@@ -156,7 +156,7 @@ def update_locked_trade_status(df: pd.DataFrame) -> None:
         return
 
     entry_time = pd.to_datetime(locked_trade["entry_time"])
-    trade_df = df[pd.to_datetime(df["time"]) >= entry_time].copy()
+    trade_df = df[pd.to_datetime(df["time"]) > entry_time].copy()
 
     if trade_df.empty:
         return
