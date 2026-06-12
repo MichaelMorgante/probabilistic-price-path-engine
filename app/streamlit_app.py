@@ -578,7 +578,18 @@ if df is None:
         freq=timeframe_to_freq(timeframe),
     )
 
-current_loaded_candle_time = str(df["time"].iloc[-1]) if df is not None and not df.empty else None
+# For live MT5 data, ignore the currently forming candle.
+# This keeps model probabilities stable between candle closes.
+if use_mt5 and df is not None and len(df) > vol_window + 21:
+    model_df = df.iloc[:-1].copy()
+else:
+    model_df = df.copy()
+
+current_loaded_candle_time = (
+    str(model_df["time"].iloc[-1])
+    if model_df is not None and not model_df.empty
+    else None
+)
 
 if st.session_state.last_seen_candle_time is None:
     st.session_state.last_seen_candle_time = current_loaded_candle_time
@@ -586,7 +597,7 @@ if st.session_state.last_seen_candle_time is None:
 
 try:
     paths, metrics = run_model(
-        df=df,
+        df=model_df,
         horizon=int(horizon),
         n_paths=int(n_paths),
         vol_window=int(vol_window),
@@ -600,7 +611,7 @@ try:
 
     st.session_state.latest_metrics_snapshot = metrics.copy()
 
-    update_locked_trade_status(df)
+    update_locked_trade_status(model_df)
 
     append_probability_log(
         metrics=metrics,
@@ -613,7 +624,7 @@ try:
     left, right = st.columns([4.8, 1.2])
 
     with left:
-        last = df.iloc[-1]
+        last = model_df.iloc[-1]
 
         price_line = (
             f"**{symbol}** · **{timeframe}** · "
@@ -623,14 +634,14 @@ try:
 
         st.markdown(price_line, unsafe_allow_html=True)
 
-        fig = make_price_path_figure(df, paths, metrics)
+        fig = make_price_path_figure(model_df, paths, metrics)
         st.plotly_chart(
             fig,
             use_container_width=True,
             config={"displayModeBar": False},
         )
 
-        render_locked_trade_panel(current_price=float(df["Close"].iloc[-1]))
+        render_locked_trade_panel(current_price=float(model_df["Close"].iloc[-1]))
         render_locked_trade_log()
 
     with right:
