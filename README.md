@@ -248,6 +248,7 @@ probabilistic-price-path-engine/
 │   ├── probability_engine.py
 │   ├── charts.py
 │   └── utils.py
+│   ├── data_loader.py
 ├── data/
 │   └── historical/
 ├── reports/
@@ -302,6 +303,14 @@ Handles:
 ### `app/streamlit_app.py`
 
 Runs the interactive Streamlit dashboard.
+
+### `src/data_loader.py`
+
+Handles:
+
+- universal data-source loading interface
+- OHLC schema validation
+- MT5, CSV, and synthetic data routing
 
 ---
 
@@ -392,10 +401,15 @@ Completed:
 - session-based locked trade log
 - README methodology section with typeset GBM equations
 - dashboard screenshots
+- universal data-source loader interface
+- CSV, MT5, and synthetic data routing
+- MT5 candle-close refresh mode
+- closed-candle MT5 model calculations
+- first research notebook
 
 Planned improvements:
 
-- research notebooks
+- additional research notebooks for jump diffusion and regime-adjusted probability
 - fuller validation examples comparing GBM, bootstrap, and analytical GBM
 - optional MT5 bid/ask-based locked entry
 - improved locked trade card layout
