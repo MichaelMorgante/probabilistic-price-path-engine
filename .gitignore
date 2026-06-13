@@ -13,3 +13,8 @@ live_artifacts/states/*
 
 .env
 .DS_Store
+
+# Jupyter
+**/.ipynb_checkpoints/
+
+data/historical/*.csv
