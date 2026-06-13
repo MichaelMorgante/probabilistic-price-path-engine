@@ -62,14 +62,26 @@ def load_csv_candles(csv_path: str | Path) -> pd.DataFrame:
 
     rename_map = {
         "datetime": "time",
+        "DateTime": "time",
         "date": "time",
+        "Date": "time",
         "timestamp": "time",
+        "Timestamp": "time",
+        "time": "time",
+        "Time": "time",
         "open": "Open",
+        "Open": "Open",
         "high": "High",
+        "High": "High",
         "low": "Low",
+        "Low": "Low",
         "close": "Close",
+        "Close": "Close",
         "volume": "Volume",
+        "Volume": "Volume",
         "tick_volume": "Volume",
+        "TickVolume": "Volume",
+        "tick volume": "Volume",
     }
 
     df = df.rename(columns=rename_map)
