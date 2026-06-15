@@ -110,7 +110,7 @@ The volatility estimate is controlled by a rolling lookback window.
 The GBM model assumes the price follows the stochastic differential equation:
 
 $$
-dS_t = \mu S_t\,dt + \sigma S_t\,dW_t
+dS_t = \mu S_t dt + \sigma S_t dW_t
 $$
 
 where:
@@ -123,7 +123,7 @@ where:
 The closed-form solution is:
 
 $$
-S_T = S_0 \exp\left(\left(\mu - \frac{1}{2}\sigma^2\right)T + \sigma\sqrt{T}Z\right)
+S_T = S_0 \exp\left(\left(\mu - \frac{1}{2}\sigma^2\right)T + \sigma \sqrt{T} Z\right)
 $$
 
 where:
