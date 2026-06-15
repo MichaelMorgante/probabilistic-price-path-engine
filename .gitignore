@@ -18,3 +18,9 @@ live_artifacts/states/*
 **/.ipynb_checkpoints/
 
 data/historical/*.csv
+
+# Generated logs and local data
+reports/logs/
+reports/probability_logs.csv
+data/historical/*.csv
+*.csv
