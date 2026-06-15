@@ -392,6 +392,8 @@ Completed:
 - Streamlit dashboard
 - MT5 candle loading for `US100.cash`
 - synthetic data fallback
+- universal data-source loader interface
+- CSV, MT5, and synthetic data routing
 - GBM Monte Carlo simulation
 - historical bootstrap simulation
 - analytical GBM terminal benchmark
@@ -400,6 +402,8 @@ Completed:
 - no-hit-within-horizon probability
 - configurable simulation controls
 - configurable refresh interval
+- MT5 candle-close refresh mode
+- closed-candle MT5 model calculations
 - TP/SL price labels on the chart
 - clearer quantile labelling
 - locked hypothetical trade mode
@@ -407,19 +411,16 @@ Completed:
 - session-based locked trade log
 - README methodology section with typeset GBM equations
 - dashboard screenshots
-- universal data-source loader interface
-- CSV, MT5, and synthetic data routing
-- MT5 candle-close refresh mode
-- closed-candle MT5 model calculations
 - first research notebook
+- jump-diffusion research notebook
 
 Planned improvements:
 
-- additional research notebooks for jump diffusion and regime-adjusted probability
-- fuller validation examples comparing GBM, bootstrap, and analytical GBM
+- signed jump analysis
+- regime-adjusted bootstrap model
+- fuller validation comparing GBM, bootstrap, jump-diffusion, and analytical GBM
 - optional MT5 bid/ask-based locked entry
 - improved locked trade card layout
-- regime-adjusted probability model
 - possible integration with VWAP probability-band context
 
 ---
