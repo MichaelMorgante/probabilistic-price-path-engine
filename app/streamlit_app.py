@@ -14,7 +14,13 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from mt5_loader import connect_mt5, load_mt5_candles, make_synthetic_ohlc
-from simulator import estimate_mu_sigma, simulate_gbm_paths, simulate_bootstrap_paths
+from simulator import (
+    estimate_mu_sigma,
+    estimate_jump_parameters,
+    simulate_gbm_paths,
+    simulate_bootstrap_paths,
+    simulate_jump_diffusion_paths,
+)
 from probability_engine import pathwise_tp_sl_metrics, analytical_gbm_terminal_metrics
 from charts import make_price_path_figure
 from utils import append_probability_log, format_pct, format_price
@@ -378,6 +384,8 @@ def run_model(
         drift_mode=drift_mode,
     )
 
+    jump_params = None
+
     if model_type == "GBM":
         paths = simulate_gbm_paths(
             current_price=current_price,
@@ -387,7 +395,8 @@ def run_model(
             n_paths=n_paths,
             seed=seed,
         )
-    else:
+
+    elif model_type == "Bootstrap":
         paths = simulate_bootstrap_paths(
             current_price=current_price,
             historical_returns=log_returns,
@@ -396,6 +405,28 @@ def run_model(
             sample_window=vol_window,
             seed=seed,
         )
+
+    elif model_type == "Jump-Diffusion (Experimental)":
+        jump_params = estimate_jump_parameters(
+            historical_returns=log_returns,
+            window=vol_window,
+            threshold_sigma=2.5,
+        )
+
+        paths = simulate_jump_diffusion_paths(
+            current_price=current_price,
+            mu=mu,
+            sigma=sigma,
+            jump_intensity=jump_params["jump_intensity"],
+            jump_mean=jump_params["jump_mean"],
+            jump_std=jump_params["jump_std"],
+            horizon=horizon,
+            n_paths=n_paths,
+            seed=seed,
+        )
+
+    else:
+        raise ValueError(f"Unsupported model_type: {model_type}")
 
     metrics = pathwise_tp_sl_metrics(
         paths=paths,
@@ -418,7 +449,7 @@ def run_model(
     metrics.update(analytical_metrics)
 
     metrics.update({
-        "symbol": st.session_state.get("symbol", "NAS100"),
+        "symbol": st.session_state.get("symbol", "US100.cash"),
         "timeframe": st.session_state.get("timeframe", "M1"),
         "horizon": horizon,
         "n_paths": n_paths,
@@ -429,6 +460,15 @@ def run_model(
         "mu": mu,
         "last_candle_time": str(df["time"].iloc[-1]),
     })
+
+    if jump_params is not None:
+        metrics.update({
+            "jump_intensity": jump_params["jump_intensity"],
+            "jump_mean": jump_params["jump_mean"],
+            "jump_std": jump_params["jump_std"],
+            "jump_n_jumps": jump_params["n_jumps"],
+            "jump_threshold_sigma": jump_params["threshold_sigma"],
+        })
 
     return paths, metrics
 
@@ -476,7 +516,7 @@ with control_cols[3]:
     n_paths = st.selectbox("Paths", [100, 500, 1000, 5000, 10000, 25000, 50000], index=2)
 
 with control_cols[4]:
-    model_type = st.selectbox("Model", ["GBM", "Bootstrap"], index=1)
+    model_type = st.selectbox("Model", ["GBM", "Bootstrap", "Jump-Diffusion (Experimental)"], index=1, )
 
 with control_cols[5]:
     direction = st.selectbox("Direction", ["Long", "Short"], index=0)
@@ -789,6 +829,24 @@ try:
             """,
             unsafe_allow_html=True,
         )
+
+        if model_type == "Jump-Diffusion (Experimental)":
+            st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+            st.markdown("### Jump Model")
+            st.markdown(
+                '<div class="small-muted">Experimental fat-tail model using threshold-based jump estimation.</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"""
+                <div style="font-size:0.95rem; line-height:1.8; margin-top:8px;">
+                    <div><span class="small-muted">Jump intensity:</span> {format_pct(metrics["jump_intensity"])}</div>
+                    <div><span class="small-muted">Detected jumps:</span> {metrics["jump_n_jumps"]}</div>
+                    <div><span class="small-muted">Threshold:</span> {metrics["jump_threshold_sigma"]:.1f}σ</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         st.markdown(
