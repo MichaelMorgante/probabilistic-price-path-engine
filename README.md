@@ -10,7 +10,7 @@ US100.cash
 
 This project converts a notebook prototype into a clean, modular Python project. The engine estimates the probability of future price paths reaching a take-profit or stop-loss level over a selected simulation horizon.
 
-The dashboard currently supports Monte Carlo GBM simulation, historical bootstrapping, pathwise TP/SL probability estimation, and a closed-form analytical GBM terminal-price benchmark.
+The dashboard currently supports Monte Carlo GBM simulation, historical bootstrapping, experimental jump-diffusion simulation, pathwise TP/SL probability estimation, and a closed-form analytical GBM terminal-price benchmark.
 
 ---
 
@@ -56,6 +56,9 @@ The current engine supports:
 
 - **Historical bootstrap simulation**  
   Resamples recent historical log returns to generate empirical future paths.
+
+- **Jump-Diffusion simulation experimental**
+  Extends the GBM framework by adding threshold-estimated jump events. This is designed to capture fat-tail and news-shock behaviour more aggressively than standard GBM or simple historical bootstrapping.
 
 - **Analytical GBM benchmark**  
   Calculates the closed-form GBM terminal distribution as a sanity check against the simulated path outputs.
@@ -240,6 +243,38 @@ This allows the model to preserve some of the recent empirical behaviour of the 
 
 ---
 
+## Jump-Diffusion Model Experimental
+
+The jump-diffusion model extends the GBM simulation by adding random jump events to the return process.
+
+The simulated return step is:
+
+$$
+r_t = \left(\mu - \frac{1}{2}\sigma^2\right) + \sigma Z_t + J_t N_t
+$$
+
+where:
+
+- $\mu$ is the estimated drift
+- $\sigma$ is the estimated volatility
+- $Z_t$ is a standard normal shock
+- $N_t$ is a Bernoulli jump indicator
+- $J_t$ is the simulated jump size
+
+Jump parameters are estimated from recent log returns using a threshold rule:
+
+$$
+|r_t - \bar{r}| > k\sigma
+$$
+
+where $k$ is the jump threshold multiplier.
+
+In the live dashboard, this model is labelled experimental because it is primarily a fat-tail and jump-risk model. It is useful for stress-testing possible price paths after volatile or news-driven moves, but it is not yet treated as a validated directional trading signal.
+
+---
+
+## Project Structure
+
 ## Project Structure
 
 ```text
@@ -247,14 +282,16 @@ probabilistic-price-path-engine/
 ├── app/
 │   └── streamlit_app.py
 ├── notebooks/
+│   ├── 01_research_price_path_simulation.ipynb
+│   └── 02_jump_diffusion_research.ipynb
 ├── src/
 │   ├── __init__.py
+│   ├── data_loader.py
 │   ├── mt5_loader.py
 │   ├── simulator.py
 │   ├── probability_engine.py
 │   ├── charts.py
 │   └── utils.py
-│   ├── data_loader.py
 ├── data/
 │   └── historical/
 ├── reports/
@@ -287,6 +324,8 @@ Handles:
 - drift and volatility estimation
 - GBM path simulation
 - historical bootstrap path simulation
+- threshold-based jump parameter estimation
+- experimental jump-diffusion path simulation
 
 ### `src/probability_engine.py`
 
@@ -397,6 +436,7 @@ Completed:
 - GBM Monte Carlo simulation
 - historical bootstrap simulation
 - analytical GBM terminal benchmark
+- experimental jump-diffusion live model
 - pathwise TP/SL probability engine
 - any-time TP/SL touch probabilities
 - no-hit-within-horizon probability
@@ -409,18 +449,17 @@ Completed:
 - locked hypothetical trade mode
 - locked trade hit detection
 - session-based locked trade log
-- README methodology section with typeset GBM equations
 - dashboard screenshots
-- first research notebook
-- jump-diffusion research notebook
-- data-source loader interface
 - first price-path research notebook
+- jump-diffusion research notebook
 - jump-diffusion sensitivity analysis
 - signed jump analysis
 
 Planned improvements:
+
+- signed jump-diffusion simulation
 - regime-adjusted bootstrap model
-- fuller validation comparing GBM, bootstrap, jump-diffusion, and analytical GBM
+- fuller validation comparing GBM, bootstrap, jump-diffusion, and realised TP/SL outcomes
 - optional MT5 bid/ask-based locked entry
 - improved locked trade card layout
 - possible integration with VWAP probability-band context
