@@ -413,10 +413,12 @@ Completed:
 - dashboard screenshots
 - first research notebook
 - jump-diffusion research notebook
+- data-source loader interface
+- first price-path research notebook
+- jump-diffusion sensitivity analysis
+- signed jump analysis
 
 Planned improvements:
-
-- signed jump analysis
 - regime-adjusted bootstrap model
 - fuller validation comparing GBM, bootstrap, jump-diffusion, and analytical GBM
 - optional MT5 bid/ask-based locked entry
