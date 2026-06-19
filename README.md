@@ -232,12 +232,14 @@ The bootstrap model does not assume normally distributed returns.
 Instead, it samples from recent empirical log returns:
 
 $$
-r_t^* \sim \text{sample}\left\{r_1,r_2,\ldots,r_n\right\}
+r_t^* \sim \operatorname{sample}(r_1, r_2, \ldots, r_n)
 $$
 
 and constructs future paths using:
 
-$$S_{t+1} = S_t e^{r_t^*}$$
+$$
+S_{t+1} = S_t e^{r_t^*}
+$$
 
 This allows the model to preserve some of the recent empirical behaviour of the market, including non-Gaussian features such as skew, fat tails, or clustered volatility.
 
