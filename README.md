@@ -232,7 +232,7 @@ The bootstrap model does not assume normally distributed returns.
 Instead, it samples from recent empirical log returns:
 
 $$
-r_t^* \sim \operatorname{sample}(r_1, r_2, \ldots, r_n)
+r_t^* \sim sample(r_1, r_2, ..., r_n)
 $$
 
 and constructs future paths using:
