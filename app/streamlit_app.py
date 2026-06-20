@@ -676,6 +676,14 @@ try:
         seed=42,
     )
 
+    if model_type == "Auto-Regime Selector":
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.metric("Auto-selected model", metrics["effective_model_type"])
+        with col_b:
+            st.metric("Detected regime", metrics.get("regime_label", "N/A"))
+        st.caption(metrics.get("regime_reason", ""))
+
     st.session_state.latest_metrics_snapshot = metrics.copy()
 
     update_locked_trade_status(model_df)
