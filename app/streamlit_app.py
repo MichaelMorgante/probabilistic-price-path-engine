@@ -690,7 +690,23 @@ try:
         )
 
         with st.expander("Auto-Regime details", expanded=False):
-            st.write(regime_reason)
+            st.markdown(f"**Selected model:** `{selected_model}`")
+            st.markdown(f"**Detected regime:** {regime_label}")
+            st.markdown(f"**Reason:** {regime_reason}")
+
+            st.markdown("#### Regime diagnostics")
+
+            st.markdown(
+                f"""
+    | Feature | Value | Interpretation |
+    |---|---:|---|
+    | Volatility ratio | `{metrics.get("regime_vol_ratio", 0.0):.3f}` | Short-term volatility relative to recent baseline |
+    | Latest return z-score | `{metrics.get("regime_latest_return_z", 0.0):.3f}` | Size of latest move versus recent volatility |
+    | Jump intensity | `{metrics.get("regime_jump_intensity", 0.0):.3f}` | Fraction of recent returns classified as unusually large |
+    | Trend score | `{metrics.get("regime_trend_score", 0.0):.3f}` | Strength of directional drift versus volatility |
+    | Range expansion | `{metrics.get("regime_range_expansion", 0.0):.3f}` | Latest candle range versus recent average range |
+    """
+            )
 
     update_locked_trade_status(model_df)
 
