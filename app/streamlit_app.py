@@ -684,11 +684,13 @@ try:
         regime_label = metrics.get("regime_label", "N/A")
         regime_reason = metrics.get("regime_reason", "")
 
-        st.info(
-            f"🤖 Auto-Regime Selector chose: **{selected_model}**\n\n"
-            f"**Detected regime:** {regime_label}\n\n"
-            f"{regime_reason}"
+        st.caption(
+            f"🤖 Auto-selected model: **{selected_model}** "
+            f"| Regime: {regime_label}"
         )
+
+        with st.expander("Auto-Regime details", expanded=False):
+            st.write(regime_reason)
 
     update_locked_trade_status(model_df)
 
