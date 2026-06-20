@@ -5,6 +5,32 @@ from math import erf, exp, log, sqrt
 
 import numpy as np
 
+def monte_carlo_probability_ci(
+    p: float,
+    n: int,
+    z: float = 1.96,
+) -> tuple[float, float]:
+    """
+    Wilson score confidence interval for a Monte Carlo probability estimate.
+
+    This gives a more stable interval than the simple normal approximation,
+    especially when probabilities are close to 0 or 1.
+    """
+    if n <= 0:
+        return float("nan"), float("nan")
+
+    p = float(p)
+    n = int(n)
+
+    denominator = 1.0 + (z**2 / n)
+    centre = p + (z**2 / (2.0 * n))
+    adjustment = z * np.sqrt((p * (1.0 - p) / n) + (z**2 / (4.0 * n**2)))
+
+    lower = (centre - adjustment) / denominator
+    upper = (centre + adjustment) / denominator
+
+    return float(max(0.0, lower)), float(min(1.0, upper))
+
 def pathwise_tp_sl_metrics(
     paths: np.ndarray,
     entry_price: float,
@@ -67,16 +93,44 @@ def pathwise_tp_sl_metrics(
     terminal = paths[:, -1]
     pct = np.percentile(terminal, [5, 20, 50, 80, 95])
 
+    p_tp_first = tp_first / n_paths
+    p_sl_first = sl_first / n_paths
+    p_neither = neither / n_paths
+    p_tp_touched = tp_touched / n_paths
+    p_sl_touched = sl_touched / n_paths
+
+    tp_first_ci = monte_carlo_probability_ci(p_tp_first, n_paths)
+    sl_first_ci = monte_carlo_probability_ci(p_sl_first, n_paths)
+    neither_ci = monte_carlo_probability_ci(p_neither, n_paths)
+    tp_touched_ci = monte_carlo_probability_ci(p_tp_touched, n_paths)
+    sl_touched_ci = monte_carlo_probability_ci(p_sl_touched, n_paths)
+
     return {
         "entry_price": float(entry_price),
         "direction": direction,
         "tp_level": float(tp_level),
         "sl_level": float(sl_level),
-        "p_tp_first": float(tp_first / n_paths),
-        "p_sl_first": float(sl_first / n_paths),
-        "p_neither": float(neither / n_paths),
-        "p_tp_touched": float(tp_touched / n_paths),
-        "p_sl_touched": float(sl_touched / n_paths),
+        "p_tp_first": float(p_tp_first),
+        "p_tp_first_ci_low": float(tp_first_ci[0]),
+        "p_tp_first_ci_high": float(tp_first_ci[1]),
+
+        "p_sl_first": float(p_sl_first),
+        "p_sl_first_ci_low": float(sl_first_ci[0]),
+        "p_sl_first_ci_high": float(sl_first_ci[1]),
+
+        "p_neither": float(p_neither),
+        "p_neither_ci_low": float(neither_ci[0]),
+        "p_neither_ci_high": float(neither_ci[1]),
+
+        "p_tp_touched": float(p_tp_touched),
+        "p_tp_touched_ci_low": float(tp_touched_ci[0]),
+        "p_tp_touched_ci_high": float(tp_touched_ci[1]),
+
+        "p_sl_touched": float(p_sl_touched),
+        "p_sl_touched_ci_low": float(sl_touched_ci[0]),
+        "p_sl_touched_ci_high": float(sl_touched_ci[1]),
+
+        "mc_ci_confidence": 0.95,
         "avg_time_to_tp": float(np.mean(tp_times)) if tp_times else float("nan"),
         "avg_time_to_sl": float(np.mean(sl_times)) if sl_times else float("nan"),
         "p_terminal_up": float(np.mean(terminal > entry_price)),

@@ -828,6 +828,19 @@ try:
             unsafe_allow_html=True,
         )
 
+        with st.expander("Monte Carlo uncertainty intervals", expanded=False):
+            st.markdown(
+                f"""
+        | Probability | Estimate | 95% MC interval |
+        |---|---:|---:|
+        | TP before SL | {format_pct(metrics["p_tp_first"])} | {format_pct(metrics["p_tp_first_ci_low"])} — {format_pct(metrics["p_tp_first_ci_high"])} |
+        | SL before TP | {format_pct(metrics["p_sl_first"])} | {format_pct(metrics["p_sl_first_ci_low"])} — {format_pct(metrics["p_sl_first_ci_high"])} |
+        | No hit | {format_pct(metrics["p_neither"])} | {format_pct(metrics["p_neither_ci_low"])} — {format_pct(metrics["p_neither_ci_high"])} |
+        | TP touched | {format_pct(metrics["p_tp_touched"])} | {format_pct(metrics["p_tp_touched_ci_low"])} — {format_pct(metrics["p_tp_touched_ci_high"])} |
+        | SL touched | {format_pct(metrics["p_sl_touched"])} | {format_pct(metrics["p_sl_touched_ci_low"])} — {format_pct(metrics["p_sl_touched_ci_high"])} |
+        """
+            )
+
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="metric-label">Expected Price</div>',
