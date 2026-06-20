@@ -828,6 +828,9 @@ try:
             unsafe_allow_html=True,
         )
 
+        st.markdown('<div class="metric-card-spacer"></div>', unsafe_allow_html=True)
+        st.markdown("<hr>", unsafe_allow_html=True)
+
         with st.expander("Monte Carlo uncertainty intervals", expanded=False):
             st.markdown(
                 f"""
@@ -840,6 +843,8 @@ try:
         | SL touched | {format_pct(metrics["p_sl_touched"])} | {format_pct(metrics["p_sl_touched_ci_low"])} — {format_pct(metrics["p_sl_touched_ci_high"])} |
         """
             )
+
+        st.markdown("<hr>", unsafe_allow_html=True)
 
         st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
         st.markdown(
