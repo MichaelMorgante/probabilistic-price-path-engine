@@ -22,6 +22,7 @@ from simulator import (
     simulate_jump_diffusion_paths,
 )
 from regime_detector import detect_market_regime
+from forecast_engine import simulate_regime_conditioned_paths
 from probability_engine import pathwise_tp_sl_metrics, analytical_gbm_terminal_metrics
 from charts import make_price_path_figure
 from utils import append_probability_log, format_pct, format_price
@@ -387,6 +388,7 @@ def run_model(
 
     jump_params = None
     regime_info = None
+    forecast_info = None
     effective_model_type = model_type
 
     if model_type == "Auto-Regime Selector":
@@ -398,7 +400,18 @@ def run_model(
         )
         effective_model_type = regime_info["selected_model"]
 
-    if effective_model_type == "GBM":
+    if effective_model_type == "Regime-Conditioned Forecast (Experimental)":
+        paths, forecast_info = simulate_regime_conditioned_paths(
+            df=df,
+            horizon=horizon,
+            n_paths=n_paths,
+            lookback=min(20, max(10, vol_window // 3)),
+            max_matches=250,
+            min_matches=30,
+            seed=seed,
+        )
+
+    elif effective_model_type == "GBM":
         paths = simulate_gbm_paths(
             current_price=current_price,
             mu=mu,
@@ -488,6 +501,22 @@ def run_model(
             }
         )
 
+    if forecast_info is not None:
+        metrics.update(
+            {
+                "forecast_type": forecast_info["forecast_type"],
+                "forecast_n_candidate_states": forecast_info["n_candidate_states"],
+                "forecast_n_matched_states": forecast_info["n_matched_states"],
+                "forecast_mean_similarity_distance": forecast_info["mean_similarity_distance"],
+                "forecast_median_similarity_distance": forecast_info["median_similarity_distance"],
+                "forecast_lookback": forecast_info["lookback"],
+                "forecast_horizon": forecast_info["horizon"],
+                "forecast_mean_forward_return": forecast_info["mean_forward_return"],
+                "forecast_median_forward_return": forecast_info["median_forward_return"],
+                "forecast_forward_return_volatility": forecast_info["forward_return_volatility"],
+            }
+        )
+
     if jump_params is not None:
         metrics.update({
             "jump_intensity": jump_params["jump_intensity"],
@@ -543,7 +572,8 @@ with control_cols[3]:
     n_paths = st.selectbox("Paths", [100, 500, 1000, 5000, 10000, 25000, 50000], index=2)
 
 with control_cols[4]:
-    model_type = st.selectbox("Model", ["GBM", "Bootstrap", "Jump-Diffusion (Experimental)", "Auto-Regime Selector",], index=1, )
+    model_type = st.selectbox("Model", ["GBM", "Bootstrap", "Jump-Diffusion (Experimental)", "Auto-Regime Selector", 
+                                        "Regime-Conditioned Forecast (Experimental)",], index=1, )
 
 with control_cols[5]:
     direction = st.selectbox("Direction", ["Long", "Short"], index=0)

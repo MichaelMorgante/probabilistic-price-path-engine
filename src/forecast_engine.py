@@ -171,7 +171,11 @@ def simulate_regime_conditioned_paths(
     )
 
     rng = np.random.default_rng(seed)
-    sampled_states = rng.choice(matched_index.to_numpy(), size=n_paths, replace=True)
+    matched_positions = np.array(
+        [df.index.get_loc(idx) for idx in matched_index],
+        dtype=int,
+    )
+    sampled_positions = rng.choice(matched_positions, size=n_paths, replace=True)
 
     current_price = float(close.iloc[-1])
     paths = np.empty((n_paths, horizon + 1), dtype=float)
@@ -179,10 +183,7 @@ def simulate_regime_conditioned_paths(
 
     forward_return_matrix = []
 
-    index_positions = {idx: pos for pos, idx in enumerate(df.index)}
-
-    for path_id, state_idx in enumerate(sampled_states):
-        start_pos = index_positions[state_idx]
+    for path_id, start_pos in enumerate(sampled_positions):
 
         # Forward returns after the matched state.
         # If matched state is t, use returns from t+1 to t+horizon.
