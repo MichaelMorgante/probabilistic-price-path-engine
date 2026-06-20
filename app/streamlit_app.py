@@ -21,6 +21,7 @@ from simulator import (
     simulate_bootstrap_paths,
     simulate_jump_diffusion_paths,
 )
+from regime_detector import detect_market_regime
 from probability_engine import pathwise_tp_sl_metrics, analytical_gbm_terminal_metrics
 from charts import make_price_path_figure
 from utils import append_probability_log, format_pct, format_price
@@ -385,8 +386,19 @@ def run_model(
     )
 
     jump_params = None
+    regime_info = None
+    effective_model_type = model_type
 
-    if model_type == "GBM":
+    if model_type == "Auto-Regime Selector":
+        regime_info = detect_market_regime(
+            df=df,
+            window=vol_window,
+            short_window=min(20, max(10, vol_window // 3)),
+            jump_threshold_sigma=2.5,
+        )
+        effective_model_type = regime_info["selected_model"]
+
+    if effective_model_type == "GBM":
         paths = simulate_gbm_paths(
             current_price=current_price,
             mu=mu,
@@ -396,7 +408,7 @@ def run_model(
             seed=seed,
         )
 
-    elif model_type == "Bootstrap":
+    elif effective_model_type == "Bootstrap":
         paths = simulate_bootstrap_paths(
             current_price=current_price,
             historical_returns=log_returns,
@@ -406,7 +418,7 @@ def run_model(
             seed=seed,
         )
 
-    elif model_type == "Jump-Diffusion (Experimental)":
+    elif effective_model_type == "Jump-Diffusion (Experimental)":
         jump_params = estimate_jump_parameters(
             historical_returns=log_returns,
             window=vol_window,
@@ -426,7 +438,7 @@ def run_model(
         )
 
     else:
-        raise ValueError(f"Unsupported model_type: {model_type}")
+        raise ValueError(f"Unsupported model_type: {effective_model_type}")
 
     metrics = pathwise_tp_sl_metrics(
         paths=paths,
@@ -455,11 +467,26 @@ def run_model(
         "n_paths": n_paths,
         "vol_window": vol_window,
         "model_type": model_type,
+        "effective_model_type": effective_model_type,
         "drift_mode": drift_mode,
         "sigma": sigma,
         "mu": mu,
         "last_candle_time": str(df["time"].iloc[-1]),
     })
+
+    if regime_info is not None:
+        metrics.update(
+            {
+                "regime_label": regime_info["regime_label"],
+                "auto_selected_model": regime_info["selected_model"],
+                "regime_reason": regime_info["reason"],
+                "regime_vol_ratio": regime_info["vol_ratio"],
+                "regime_latest_return_z": regime_info["latest_return_z"],
+                "regime_jump_intensity": regime_info["jump_intensity"],
+                "regime_trend_score": regime_info["trend_score"],
+                "regime_range_expansion": regime_info["range_expansion"],
+            }
+        )
 
     if jump_params is not None:
         metrics.update({
@@ -516,7 +543,7 @@ with control_cols[3]:
     n_paths = st.selectbox("Paths", [100, 500, 1000, 5000, 10000, 25000, 50000], index=2)
 
 with control_cols[4]:
-    model_type = st.selectbox("Model", ["GBM", "Bootstrap", "Jump-Diffusion (Experimental)"], index=1, )
+    model_type = st.selectbox("Model", ["GBM", "Bootstrap", "Jump-Diffusion (Experimental)", "Auto-Regime Selector",], index=1, )
 
 with control_cols[5]:
     direction = st.selectbox("Direction", ["Long", "Short"], index=0)
@@ -830,7 +857,7 @@ try:
             unsafe_allow_html=True,
         )
 
-        if model_type == "Jump-Diffusion (Experimental)":
+        if "jump_intensity" in metrics:
             st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
             st.markdown("### Jump Model")
             st.markdown(
