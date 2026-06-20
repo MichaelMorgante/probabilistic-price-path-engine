@@ -738,6 +738,44 @@ try:
     """
             )
 
+    if model_type == "Regime-Conditioned Forecast (Experimental)":
+        matched_states = int(metrics.get("forecast_n_matched_states", 0))
+        candidate_states = int(metrics.get("forecast_n_candidate_states", 0))
+        similarity_distance = metrics.get("forecast_median_similarity_distance", 0.0)
+
+        st.caption(
+            f"🧠 Regime-conditioned forecast | "
+            f"Matched states: **{matched_states}** / {candidate_states} | "
+            f"Median similarity distance: `{similarity_distance:.3f}`"
+        )
+
+        with st.expander("Regime-Conditioned Forecast details", expanded=False):
+            st.markdown(
+                """
+    This model does not sample from the full return history.
+
+    It finds historical market states that looked similar to the current market state, then samples the forward returns that followed those similar states.
+    """
+            )
+
+            st.markdown("#### Forecast diagnostics")
+
+            st.markdown(
+                f"""
+    | Diagnostic | Value |
+    |---|---:|
+    | Candidate historical states | `{candidate_states}` |
+    | Matched similar states | `{matched_states}` |
+    | Lookback window | `{metrics.get("forecast_lookback", 0):.0f}` |
+    | Forecast horizon | `{metrics.get("forecast_horizon", 0):.0f}` |
+    | Mean similarity distance | `{metrics.get("forecast_mean_similarity_distance", 0.0):.3f}` |
+    | Median similarity distance | `{metrics.get("forecast_median_similarity_distance", 0.0):.3f}` |
+    | Mean forward return | `{metrics.get("forecast_mean_forward_return", 0.0):.6f}` |
+    | Median forward return | `{metrics.get("forecast_median_forward_return", 0.0):.6f}` |
+    | Forward return volatility | `{metrics.get("forecast_forward_return_volatility", 0.0):.6f}` |
+    """
+            )
+
     update_locked_trade_status(model_df)
 
     append_probability_log(
