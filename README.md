@@ -60,6 +60,12 @@ The current engine supports:
 - **Jump-Diffusion simulation experimental**
   Extends the GBM framework by adding threshold-estimated jump events. This is designed to capture fat-tail and news-shock behaviour more aggressively than standard GBM or simple historical bootstrapping.
 
+- **Auto-Regime Selector**
+  Automatically chooses between GBM, Bootstrap, and Jump-Diffusion based on recent market-regime diagnostics.
+
+- **Regime-Conditioned Forecast experimental**
+  Finds historical market states similar to the current state and samples the forward returns that followed those matched states.
+
 - **Analytical GBM benchmark**  
   Calculates the closed-form GBM terminal distribution as a sanity check against the simulated path outputs.
 
@@ -275,7 +281,105 @@ In the live dashboard, this model is labelled experimental because it is primari
 
 ---
 
-## Project Structure
+## Auto-Regime Selector
+
+The dashboard includes an Auto-Regime Selector mode that automatically chooses between the existing simulation models based on current market behaviour.
+
+Instead of manually selecting GBM, Bootstrap, or Jump-Diffusion, the selector calculates recent market-regime features and chooses the model that best matches the current environment.
+
+The regime features include:
+
+- short-term volatility relative to longer-term volatility
+- latest return z-score
+- jump intensity
+- trend score
+- candle range expansion
+
+The selector follows the general logic:
+
+```text
+Calm diffusion-like regime          -> GBM
+High-volatility empirical regime    -> Bootstrap
+Jump-risk / shock regime            -> Jump-Diffusion
+Mixed / uncertain regime            -> Bootstrap
+```
+
+This makes the dashboard more adaptive while keeping the original individual models available. GBM, Bootstrap, and Jump-Diffusion can still be selected manually.
+
+The dashboard also displays the selected model, detected regime, and regime diagnostics so the automatic choice remains transparent.
+
+---
+
+## Regime-Conditioned Forecast Model Experimental
+
+The Regime-Conditioned Forecast is an experimental conditional probability model.
+
+Unlike the standard bootstrap model, which samples from recent returns more generally, this model first looks for historical market states that were similar to the current market state. It then samples the forward returns that followed those similar historical states.
+
+The idea is:
+
+```text
+Current market state
+        ↓
+Find similar historical states
+        ↓
+Sample what happened after those states
+        ↓
+Generate conditional future price paths
+```
+
+The model builds rolling market-state features such as volatility, mean return, trend score, latest return z-score, and range ratio. It then compares the current state with historical states using a standardised distance measure.
+
+For each matched historical state, the model takes the forward return sequence that followed it and applies that sequence to the current price.
+
+If the current price is $S_0$ and the sampled forward log returns are $r_1, r_2, ..., r_h$, then the simulated path is reconstructed as:
+
+$$
+S_t = S_0 \exp\left(\sum_{i=1}^{t} r_i\right)
+$$
+
+for:
+
+$$
+t = 1,2,...,h
+$$
+
+This creates a conditional forecast distribution based on similar past regimes rather than an unconditional random sample of all recent returns.
+
+The dashboard reports diagnostics including:
+
+- number of candidate historical states
+- number of matched similar states
+- mean similarity distance
+- median similarity distance
+- lookback window
+- forecast horizon
+- mean forward return
+- median forward return
+- forward return volatility
+
+This model is labelled experimental because it is a research feature and has not yet been fully validated against realised TP/SL outcomes.
+
+---
+
+## Monte Carlo Uncertainty Intervals
+
+The dashboard now includes optional Monte Carlo uncertainty intervals for the simulated probability estimates.
+
+The core pathwise probability calculation is unchanged:
+
+$$
+\mathbb{P}(TP \text{ before } SL) = \frac{\text{number of paths where TP is hit first}}{\text{total number of paths}}
+$$
+
+$$
+\mathbb{P}(SL \text{ before } TP) = \frac{\text{number of paths where SL is hit first}}{\text{total number of paths}}
+$$
+
+The uncertainty interval does not change the estimated probability. It only estimates how much Monte Carlo sampling noise may be present for the selected number of simulated paths.
+
+The dashboard displays these intervals in a collapsed section so the main probability panel remains clean.
+---
 
 ## Project Structure
 
@@ -287,11 +391,13 @@ probabilistic-price-path-engine/
 │   ├── 01_research_price_path_simulation.ipynb
 │   └── 02_jump_diffusion_research.ipynb
 ├── src/
-│   ├── __init__.py
+│   ├── **init**.py
 │   ├── data_loader.py
 │   ├── mt5_loader.py
 │   ├── simulator.py
 │   ├── probability_engine.py
+│   ├── regime_detector.py
+│   ├── forecast_engine.py
 │   ├── charts.py
 │   └── utils.py
 ├── data/
